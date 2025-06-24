@@ -26,14 +26,14 @@ async function retrieveListItems() {
     }
 }
 
-async function addListItem(text) {
+async function deleteListItem(id) {
     try {
         const connection = await mysql.createConnection(dbConfig);
-        const query = 'INSERT INTO items (text) VALUES (?)';
-        await connection.execute(query, [text]);
+        const query = 'DELETE FROM items WHERE id = ?';
+        await connection.execute(query, [id]);
         await connection.end();
     } catch (error) {
-        console.error('Error adding list item:', error);
+        console.error('Error deleting list item:', error);
         throw error;
     }
 }
@@ -59,21 +59,21 @@ async function handleRequest(req, res) {
             res.end('Error loading index.html');
         }
     } 
-    else if (req.method === 'POST' && parsedUrl.pathname === '/add') {
+    else if (req.method === 'POST' && parsedUrl.pathname === '/delete') {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
         });
         req.on('end', async () => {
             try {
-                const { text } = JSON.parse(body);
-                await addListItem(text);
+                const { id } = JSON.parse(body);
+                await deleteListItem(id);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
             } catch (error) {
                 console.error(error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: 'Failed to add item' }));
+                res.end(JSON.stringify({ success: false, error: 'Failed to delete item' }));
             }
         });
     }
@@ -89,7 +89,7 @@ async function getHtmlRows() {
         <tr>
             <td>${item.id}</td>
             <td>${item.text}</td>
-            <td></td>
+            <td><button class="delete-btn" data-id="${item.id}">×</button></td>
         </tr>
     `).join('');
 }
